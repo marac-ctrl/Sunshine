@@ -72,7 +72,7 @@ jobs:
 
       - name: Setup Dependencies Windows
         # if a dependency needs to be pinned, see https://github.com/LizardByte/build-deps/pull/186
-        uses: msys2/setup-msys2@4f806de0a5a7294ffabaff804b38a9b435a73bda  # v2.30.0
+        uses: msys2/setup-msys2@cafece8e6baf9247cf9b1bf95097b0b983cc558d  # v2.31.0
         with:
           msystem: ${{ matrix.msystem }}
           update: true
@@ -249,7 +249,7 @@ jobs:
       - name: Sign Windows executables
         # ARM64 is not currently supported, see https://github.com/Azure/artifact-signing-action/issues/92
         if: inputs.publish_release == 'true' && inputs.azure_signing_account != '' && matrix.name != 'Windows-ARM64'
-        uses: azure/trusted-signing-action@87c2e83e6868da99d3380aa309851b32ed9a8346  # v1.1.0
+        uses: azure/trusted-signing-action@b443cf8ea4124818d2ea9f043cba29fc3ec47b16  # v1.2.0
         with:
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
           azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
@@ -285,7 +285,7 @@ jobs:
       - name: Sign Windows installers
         # ARM64 is not currently supported, see https://github.com/Azure/artifact-signing-action/issues/92
         if: inputs.publish_release == 'true' && inputs.azure_signing_account != '' && matrix.name != 'Windows-ARM64'
-        uses: azure/trusted-signing-action@87c2e83e6868da99d3380aa309851b32ed9a8346  # v1.1.0
+        uses: azure/trusted-signing-action@b443cf8ea4124818d2ea9f043cba29fc3ec47b16  # v1.2.0
         with:
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
           azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}

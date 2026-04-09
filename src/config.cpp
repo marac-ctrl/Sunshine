@@ -486,6 +486,11 @@ namespace config {
       false,  // strict_rc_buffer
     },  // vaapi
 
+    {
+      2,  // vk.tune (default: ll - low latency)
+      4,  // vk.rc_mode (default: vbr)
+    },
+
     {},  // capture
     {},  // encoder
     {},  // adapter_name
@@ -1062,11 +1067,20 @@ namespace config {
     return opts;
   }
 
-  void apply_config(std::unordered_map<std::string, std::string> &&vars) {
+  void log_config_settings(const std::unordered_map<std::string, std::string> &vars, bool save) {
     for (auto &[name, val] : vars) {
-      BOOST_LOG(info) << "config: '"sv << name << "' = "sv << val;
-      modified_config_settings[name] = val;
+      bool is_redacted = std::ranges::find(config::redacted_config, name) != config::redacted_config.end();
+
+      BOOST_LOG(info) << "config: '"sv << name << "' = "sv << (is_redacted ? "[redacted]" : val);
+
+      if (save) {
+        modified_config_settings[name] = val;
+      }
     }
+  }
+
+  void apply_config(std::unordered_map<std::string, std::string> &&vars) {
+    log_config_settings(vars, true);
 
     int_f(vars, "qp", video.qp);
     int_between_f(vars, "hevc_mode", video.hevc_mode, {0, 3});
@@ -1137,6 +1151,9 @@ namespace config {
 
     bool_f(vars, "vaapi_strict_rc_buffer", video.vaapi.strict_rc_buffer);
 
+    int_f(vars, "vk_tune", video.vk.tune);
+    int_f(vars, "vk_rc_mode", video.vk.rc_mode);
+
     string_f(vars, "capture", video.capture);
     string_f(vars, "encoder", video.encoder);
     string_f(vars, "adapter_name", video.adapter_name);
@@ -1197,12 +1214,19 @@ namespace config {
       "https://[::1]"
     };
 
-    // Append user-configured origins
-    sunshine.csrf_allowed_origins.insert(
-      sunshine.csrf_allowed_origins.end(),
-      user_csrf_origins.begin(),
-      user_csrf_origins.end()
-    );
+    // Validate and append user-configured origins
+    bool csrf_invalid_config = false;
+    for (const auto &origin : user_csrf_origins) {
+      if (origin.size() > 8 && origin.starts_with("https://")) {
+        sunshine.csrf_allowed_origins.push_back(origin);
+      } else {
+        csrf_invalid_config = true;
+        BOOST_LOG(warning) << "Invalid 'csrf_allowed_origins' entry rejected: "sv << origin;
+      }
+    }
+    if (csrf_invalid_config) {
+      BOOST_LOG(warning) << "Please refer to: https://docs.lizardbyte.dev/projects/sunshine/latest/md_docs_2configuration.html#csrf_allowed_origins"sv;
+    }
 
     int to = -1;
     int_between_f(vars, "ping_timeout", to, {-1, std::numeric_limits<int>::max()});
